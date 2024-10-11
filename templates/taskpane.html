@@ -1,0 +1,29 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT License. -->
+<!-- This file shows how to design a first-run page that provides a welcome screen to the user about the features of the add-in. -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script src="{{ url_for('static', filename='taskpane.js') }}" crossorigin="anonymous" defer></script>    
+    <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/9.6.1/css/fabric.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='taskpane.css') }}">
+</head>
+
+<body class="ms-font-m ms-welcome ms-Fabric" id="welcome-page">
+    <header class="ms-welcome__header ms-bgColor-neutralLighter" id="header-section">
+        <img id="logo" width="90" height="90" src="../../assets/logo-filled.png" alt="Contoso" title="Contoso" />
+        <h1 class="ms-font-su" id="welcome-heading">Bem vindo</h1>
+    </header>    
+
+    <form id="client-form" class="ms-client-form">
+        <label for="client-code" class="form-label">Código Cliente:</label>
+        <input type="text" id="client-code" name="client-code" class="form-input" /><br /><br />
+        <button type="submit" class="form-submit-btn" id="submit-button">Receber E-mail</button>
+    </form>
+</body>
+
+</html>
