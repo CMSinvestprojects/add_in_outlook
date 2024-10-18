@@ -56,4 +56,11 @@ class InfosUsuario:
         return df
 
     def nome(self):
-        return self.__shorten_name(pd.read_sql_query(f"select * from info_clientes where cod_cliente={self._cod_cliente}", self._engine)['nome_cliente'].to_list()[0].capitalize())
+        try:
+            return self.__shorten_name(pd.read_sql_query(f"select * from info_clientes where cod_cliente={self._cod_cliente}", self._engine)['nome_cliente'].to_list()[0].capitalize())
+        except:
+            return "Cliente Não Identificado"
+        
+    def rentabilidade(self):
+        df = pd.read_sql_query(f"SELECT * FROM rentabilidades WHERE YEAR(data) = YEAR(CURRENT_DATE) and cod_cliente = {self._cod_cliente}", self._engine)
+        return df

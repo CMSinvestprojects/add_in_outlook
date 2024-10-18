@@ -60,8 +60,7 @@ def submit_client_code():
     
     rr = RelatorioReuniao(client_code   ,engine)
     rr.destinatario(email)
-    rr.texto_planilhao()
-    rr.criar_email()
+    rr.estruturar_email()
     
     response = {
         'message': f'Client code {client_code} received successfully'
