@@ -64,3 +64,12 @@ class InfosUsuario:
     def rentabilidade(self):
         df = pd.read_sql_query(f"SELECT * FROM rentabilidades WHERE YEAR(data) = YEAR(CURRENT_DATE) and cod_cliente = {self._cod_cliente}", self._engine)
         return df
+    
+    def captacao(self):
+        """
+        retona a captacao dos uiltimos 12 meses do cliente
+        """
+        df = pd.read_sql_query(f"SELECT * from captacao_por_cliente cpc where cod_cliente = {self._cod_cliente} and tipo_de_captacao = 'TED' and data >= (now() - INTERVAL 12 MONTH )",self._engine)
+        return df
+    
+

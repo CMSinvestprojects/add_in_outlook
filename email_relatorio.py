@@ -2,6 +2,7 @@ from email_scrapper_functions import InfosUsuario
 import win32com.client
 import pythoncom
 import pandas as pd
+pd.options.mode.chained_assignment = None 
 
 
 #formacao do texto em txt depois 
@@ -55,6 +56,7 @@ class RelatorioReuniao:
         self._df_extrato = self._iu.extrato()
         self._df_planilhao = self._iu.planilhao()
         self._df_patrimonio = self._iu.rentabilidade()
+        self._df_captacao = self._iu.captacao()
 
         self.body = f"<p>Olá! Pretende fazer reunião com o cliente {cod_cliente}<p>"
 
@@ -136,12 +138,13 @@ class RelatorioReuniao:
             self.body += f"<li>Cliente é <b>casado</b>, porém não possui nome do Conjuge registrado</li>"
         
         #verificar receita
-
+        
+        
         if (df.loc[0,'despesas'] != None and df.loc[0,'despesas'] != "") or (df.loc[0,'receitas'] != None and df.loc[0,'receitas'] != ""):
             self.body += f"<li>Foi registrado uma despesa anual de R$ {df.loc[0,'despesas']} e receita anual de R$ {df.loc[0,'receitas']}. Esse valor ainda se mantem</li>"
             self.body += f"""<li>Enquanto no extrato da captação vemos que nos ultimos 12 meses:<ol>
-                                <li>Receita: {1234}</li>
-                                <li>Despesa: {4321}</li>
+                                <li>Aportes: {'{:_.2f}'.format(round(self._df_captacao['aportes'].sum(),2)).replace('.',',').replace('_','.')} o que é mensalmente: {'{:_.2f}'.format(round(self._df_captacao['aportes'].sum()/12,2)).replace('.',',').replace('_','.')}</li>
+                                <li>Retiradas: {'{:_.2f}'.format(round(self._df_captacao['retiradas'].sum(),2)).replace('.',',').replace('_','.')}o que é mensalmente: {'{:_.2f}'.format(round(self._df_captacao['retiradas'].sum()/12,2)).replace('.',',').replace('_','.')}</li>
                                  </ol>
                              </li>"""
         
@@ -255,7 +258,11 @@ class RelatorioReuniao:
         
 if __name__ == "__main__":
     from database import engine
-    # rr = RelatorioReuniao(3353633 ,engine)
-    rr = RelatorioReuniao(354748 ,engine)
+    
+    rr = RelatorioReuniao(3130085 ,engine)
+    # rr = RelatorioReuniao(354748 ,engine)
+    
     # rr = RelatorioReuniao(9673555 ,engine)
     rr.estruturar_email()
+
+    # print(pd.read_sql_query("SELECT * from captacao_por_cliente cpc where cod_cliente = 7851089", engine))
