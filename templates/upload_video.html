@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerar resumo de reunião</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header img {
+            max-width: 150px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #007bff;
+        }
+
+        form {
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: block;
+            margin: 0 auto 20px;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #loader {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #loader .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #results {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .tox-tinymce {
+            width: 80% !important;
+            margin-top: 20px;
+        }
+    </style>
+    <!-- Inclua jQuery no cabeçalho -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Inclua TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/cod22dlwwp57fzzw5mgicb9vq79497kdl8o6ol0jd67nsxrz/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <!-- Coloque o caminho da sua imagem logo.png aqui -->
+            <img src="static/images/logo_cms.png" alt="Logo">
+            <h1>Gerador de relatório </h1>
+        </header>
+        <form id="upload-form" enctype="multipart/form-data">
+            <input type="file" id="files" name="files" multiple required>
+            <button type="submit">Upload</button>
+        </form>
+        <div id="loader">
+            <div class="spinner"></div>
+            <p>Carregando...</p>
+        </div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        $('#upload-form').on('submit', async function (event) {
+            event.preventDefault();
+
+            // Mostrar o loader com jQuery
+            $('#loader').show();
+
+            const formData = new FormData();
+            const files = $('#files')[0].files;
+
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Ocorreu um erro durante a operação.");
+            } finally {
+                // Ocultar o loader com jQuery
+                $('#loader').hide();
+            }
+        });
+    </script>
+</body>
+
+</html>
