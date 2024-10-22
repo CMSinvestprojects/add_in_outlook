@@ -69,15 +69,4 @@ def submit_client_code():
     return jsonify(response)
     
 if __name__ == "__main__":
-    if os.environ.get("APP_MODE") == "DEV":
-        print("Running in DEV mode")
-        # Call the function to ensure certificates are installed and valid
-        ensure_certificates_are_installed()
-
-        # Assuming the ensure_certificates_are_installed function updates the default paths as needed
-        from devcerts.defaults import localhost_certificate_path, localhost_key_path
-        ssl_context = (localhost_certificate_path, localhost_key_path)
-        
-        app.run(debug=True, ssl_context=ssl_context)
-    else:
-        app.run(debug=True)
+    app.run(debug=True)
