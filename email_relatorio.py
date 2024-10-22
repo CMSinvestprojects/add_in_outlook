@@ -91,7 +91,7 @@ class RelatorioReuniao:
         self.body += "<ul>"
         for i in lista_texto:
             valor_formatado = self.__formatar_tempo(round(dict_opc[i][1],2))            
-            self.body += f"<li>{i.capitalize()} R$ {valor_formatado}</li>"
+            self.body += f"<li>{i.capitalize()} R$ {valor_formatado} |     Ideal {round(100*dict_opc[i][2],2)}%  e  Atual {round(100*dict_opc[i][3],2)}%</li>"
 
         self.body += "</ul>"
         pass
@@ -100,7 +100,7 @@ class RelatorioReuniao:
         self._mail.HTMLBody = self.body
         self._mail.Display()
 
-    def destinatario(self,email="douglas.souza@cmsinvest.com.br"):
+    def destinatario(self,email="teste.teste@teste.com.br"):
         self._mail.To = email
 
     def estruturar_email(self):
@@ -144,7 +144,7 @@ class RelatorioReuniao:
             self.body += f"<li>Foi registrado uma despesa anual de R$ {df.loc[0,'despesas']} e receita anual de R$ {df.loc[0,'receitas']}. Esse valor ainda se mantem</li>"
             self.body += f"""<li>Enquanto no extrato da captação vemos que nos ultimos 12 meses:<ol>
                                 <li>Aportes: {'{:_.2f}'.format(round(self._df_captacao['aportes'].sum(),2)).replace('.',',').replace('_','.')} o que é mensalmente: {'{:_.2f}'.format(round(self._df_captacao['aportes'].sum()/12,2)).replace('.',',').replace('_','.')}</li>
-                                <li>Retiradas: {'{:_.2f}'.format(round(self._df_captacao['retiradas'].sum(),2)).replace('.',',').replace('_','.')}o que é mensalmente: {'{:_.2f}'.format(round(self._df_captacao['retiradas'].sum()/12,2)).replace('.',',').replace('_','.')}</li>
+                                <li>Retiradas: {'{:_.2f}'.format(round(self._df_captacao['retiradas'].sum(),2)).replace('.',',').replace('_','.')} o que é mensalmente: {'{:_.2f}'.format(round(self._df_captacao['retiradas'].sum()/12,2)).replace('.',',').replace('_','.')}</li>
                                  </ol>
                              </li>"""
         
@@ -174,7 +174,7 @@ class RelatorioReuniao:
         df = self._df_patrimonio
         df['variacao_patrimonial'] = df['patrimonio_final'] - df['patrimonio_inicial']
         df = df[['data','patrimonio_inicial', 'aportes_e_retiradas', 'ir_pago','patrimonio_final', 'variacao_patrimonial', 'rent_mes', 'rent_mes_cdi', 'rent_ano','rent_ano_cdi']]
-        print(df.dtypes)
+        
         df['data'] = pd.to_datetime(df['data'], dayfirst=True)#.strftime('%b-%y')
         df['data'] = df['data'].dt.strftime('%b-%y')
 
@@ -207,9 +207,6 @@ class RelatorioReuniao:
           
         self.body += df_html
 
-
-        
-
     def texto_planilhao(self):
         self.titulo_area("Planilhão")
         #ver o que esta over 
@@ -228,7 +225,9 @@ class RelatorioReuniao:
             lista_valores.append([])
             status =  self._df_planilhao.loc[0,f'status_{i}']
             valor = self._df_planilhao.loc[0,f'variacao_{i}']
-            lista_valores[-1] = [status,valor]
+            ideal = self._df_planilhao.loc[0,f'{i}_ideal']
+            atual = self._df_planilhao.loc[0,i]
+            lista_valores[-1] = [status,valor,ideal,atual]
             if status =="OVER":
                 over.append(i)
                 #preciso aora do detalhamento e armazenar aqui 
@@ -238,9 +237,7 @@ class RelatorioReuniao:
                 value_under += valor
         #ver qnt posso sair 
         dict_opc = dict(zip(opcoes,lista_valores))
-        # print(over,under)
-        # print(dict_opc)
-        self.body += f"A partir do planilhão temos que o cliente tem perfil {int(portifolio)}, está com uma aderência de {float(round(aderencia*100,2))}%,"
+        self.body += f"A partir do planilhão temos que o cliente tem perfil {int(portifolio)} e NET {self._df_planilhao.loc[0,'PL']}, está com uma aderência de <b>{float(round(aderencia*100,2))}%</b>,"
         # if len(over) !=0:
         self.body += "e também é possivel analisar que o seu cliente está com posição <b>Over</b>, nas seguintes classes:"
         self.bullet_list_alocacao(over,dict_opc)

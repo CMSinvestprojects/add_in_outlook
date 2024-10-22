@@ -15,14 +15,14 @@ Office.onReady(() => {
  */
 function action(event) {
   Office.onReady((info) => {
+    const subject = Office.context.mailbox.item.subject;
+    // const code = str.match(/\d+/)[0];
     if (info.host === Office.HostType.Outlook) {
       console.log(`Current user: ${Office.context.mailbox.userProfile.emailAddress}`);
       Office.context.mailbox.displayNewAppointmentForm({
         requiredAttendees: ['qwer@cmsinvest.com.br'], //cliente
-        optionalAttendees: ['optional1@example.com'], //investor e assistente
-        subject: Office.context.mailbox.userProfile.emailAddress,
-        location: 'Meeting Room 1',
-        body: 'Agenda of the meeting.',
+        optionalAttendees: ['optional1@example.com'], //investor e assistente        
+        subject: subject,
         start: new Date(new Date()),  
         end: new Date(new Date())     
       });
