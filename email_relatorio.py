@@ -1,5 +1,4 @@
-from email_scrapper_functions import InfosUsuario
-import win32com.client
+from email_scrapper_functions import InfosUsuario, EmailCreator
 import pythoncom
 import pandas as pd
 pd.options.mode.chained_assignment = None 
@@ -14,11 +13,11 @@ class RelatorioReuniao:
                 <head>
                 <style>
                 .dataframe {
-                    font-size: 20px;
+                    font-size: 12px;
                     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
                     text-align: center;
                     white-space: nowrap;
-                    width: 70%;
+                    width: 100%;
                     
                     border-collapse: collapse;
                 }
@@ -52,20 +51,19 @@ class RelatorioReuniao:
         pythoncom.CoInitialize()  
 
         self._iu = InfosUsuario(cod_cliente,engine)
+        self._ec = EmailCreator()
         self._df_mapao = self._iu.mapao()
         self._df_extrato = self._iu.extrato()
         self._df_planilhao = self._iu.planilhao()
         self._df_patrimonio = self._iu.rentabilidade()
         self._df_captacao = self._iu.captacao()
+        
+        self._ec.body = f"<p>Olá! Pretende fazer reunião com o cliente {cod_cliente}<p>"
 
-        self.body = f"<p>Olá! Pretende fazer reunião com o cliente {cod_cliente}<p>"
-
-        outlook = win32com.client.Dispatch('outlook.application')
-        self._mail = outlook.CreateItem(0x0)
-        self._mail.Subject = f"Reunião {cod_cliente} | {self._iu.nome()}"
+        self._ec.asssunto(f"Reunião {cod_cliente} | {self._iu.nome()}")
 
     def titulo_area(self,title):
-        self.body += f"<h2>{title}</h2>"
+        self._ec.body += f"<h2>{title}</h2>"
 
     def __coluna_str(self,colunas,df):
         for i in colunas:
@@ -80,28 +78,27 @@ class RelatorioReuniao:
         return f"{valor:_.2f}".replace(".", ",").replace("_", ".")
 
     def bullet_list_generica(self,lista_texto):
-        self.body += "<ul>"
+        self._ec.body += "<ul>"
         for i in lista_texto:
-            self.body += f"<li>{i.capitalize()}</li>"
+            self._ec.body += f"<li>{i.capitalize()}</li>"
 
-        self.body += "</ul>"
+        self._ec.body += "</ul>"
         pass
 
     def bullet_list_alocacao(self,lista_texto,dict_opc):
-        self.body += "<ul>"
+        self._ec.body += "<ul>"
         for i in lista_texto:
             valor_formatado = self.__formatar_tempo(round(dict_opc[i][1],2))            
-            self.body += f"<li>{i.capitalize()} R$ {valor_formatado} |     Ideal {round(100*dict_opc[i][2],2)}%  e  Atual {round(100*dict_opc[i][3],2)}%</li>"
+            self._ec.body += f"<li>{i.capitalize()} R$ {valor_formatado} |     Ideal {round(100*dict_opc[i][2],2)}%  e  Atual {round(100*dict_opc[i][3],2)}%</li>"
 
-        self.body += "</ul>"
+        self._ec.body += "</ul>"
         pass
 
     def criar_email(self):
-        self._mail.HTMLBody = self.body
-        self._mail.Display()
+        self._ec.enviar_email()
 
     def destinatario(self,email="teste.teste@teste.com.br"):
-        self._mail.To = email
+        self._ec.destinatario(email)
 
     def estruturar_email(self):
         self.texto_planilhao()
@@ -111,7 +108,7 @@ class RelatorioReuniao:
 
     def texto_mapao(self):
         self.titulo_area("Check List Financeiro")
-        self.body += f"<p>A partir do checklist financeiro do cliente, levantamos algumas perguntas e tópicos interessantes para fazer para o cliente</p>"
+        self._ec.body += f"<p>A partir do checklist financeiro do cliente, levantamos algumas perguntas e tópicos interessantes para fazer para o cliente</p>"
         df = self._df_mapao
         rm_fields = ['cod_cliente', 'nome', 'patrimonio_declarado', 'net', 'perfil_suitability',
             'data_atualizacao', 'index', 'filhos']
@@ -128,21 +125,21 @@ class RelatorioReuniao:
         result['percentual'] = 100*result['n_preenchidos']/(len(cols))
         
         if result.loc[0,"percentual"] < 40:
-            self.body += f"""<p>Cliente tem apenas {round(result.loc[0,"percentual"],2)}% do Check-List Financeiro preenchido, aproveitar a reunião para coletar 
+            self._ec.body += f"""<p>Cliente tem apenas {round(result.loc[0,"percentual"],2)}% do Check-List Financeiro preenchido, aproveitar a reunião para coletar 
                             as informações necessárias</p>"""
         #aqui é fazer o bate bola com os valores e depois sim ou n 
-        self.body += "<ul>"
+        self._ec.body += "<ul>"
             
         #casado
         if df.loc[0,'estado_civil'] == "casado" and (df.loc[0,'nome_conjuge'] == None or df.loc[0,'nome_conjuge'] == ""):
-            self.body += f"<li>Cliente é <b>casado</b>, porém não possui nome do Conjuge registrado</li>"
+            self._ec.body += f"<li>Cliente é <b>casado</b>, porém não possui nome do Conjuge registrado</li>"
         
         #verificar receita
         
         
         if (df.loc[0,'despesas'] != None and df.loc[0,'despesas'] != "") or (df.loc[0,'receitas'] != None and df.loc[0,'receitas'] != ""):
-            self.body += f"<li>Foi registrado uma despesa anual de R$ {df.loc[0,'despesas']} e receita anual de R$ {df.loc[0,'receitas']}. Esse valor ainda se mantem</li>"
-            self.body += f"""<li>Enquanto no extrato da captação vemos que nos ultimos 12 meses:<ol>
+            self._ec.body += f"<li>Foi registrado uma despesa anual de R$ {df.loc[0,'despesas']} e receita anual de R$ {df.loc[0,'receitas']}. Esse valor ainda se mantem</li>"
+            self._ec.body += f"""<li>Enquanto no extrato da captação vemos que nos ultimos 12 meses:<ol>
                                 <li>Aportes: {'{:_.2f}'.format(round(self._df_captacao['aportes'].sum(),2)).replace('.',',').replace('_','.')} o que é mensalmente: {'{:_.2f}'.format(round(self._df_captacao['aportes'].sum()/12,2)).replace('.',',').replace('_','.')}</li>
                                 <li>Retiradas: {'{:_.2f}'.format(round(self._df_captacao['retiradas'].sum(),2)).replace('.',',').replace('_','.')} o que é mensalmente: {'{:_.2f}'.format(round(self._df_captacao['retiradas'].sum()/12,2)).replace('.',',').replace('_','.')}</li>
                                  </ol>
@@ -150,8 +147,8 @@ class RelatorioReuniao:
         
         #
         if df.loc[0, "calculo_aposentadoria"] =="s":
-            self.body += f'<li>Cálculo para aposentadoria é uma preocupação <a data-fr-linked="true" href="https://cmsbi.com/simulador_aposentadoria">https://cmsbi.com/simulador_aposentadoria</a></li>'
-        self.body += "</ul>"
+            self._ec.body += f'<li>Cálculo para aposentadoria é uma preocupação <a data-fr-linked="true" href="https://cmsbi.com/simulador_aposentadoria">https://cmsbi.com/simulador_aposentadoria</a></li>'
+        self._ec.body += "</ul>"
 
         mapa_oportundiades = ['previdencia','seguros_pf','seguros_pj','cambio_pf','cambio_pj','credito_pf','credito_pj','planejamento_patrimonial','trafalgar','conta_internacional']
         traducao_mapa_oportunidades = ['Previdência','Seguro na PF','Seguro na PJ','Câmbio na PF','Câmbio na PJ','Crédito na PF','Crédito na PJ', 'Planejamento Patrimonial (Pava)','Trafalgar','Investimentos no Exterior']
@@ -167,7 +164,7 @@ class RelatorioReuniao:
                 aux += f'<li>{dict_mapao[i]}</li>'
         aux += "</ul>"
         if verify:
-            self.body += aux
+            self._ec.body += aux
         
     def tabela_patrimonio(self):
         self.titulo_area("Patrimônio")
@@ -205,7 +202,7 @@ class RelatorioReuniao:
         df_html = df_html.replace("</tbody>",'').replace("</table>","")
         df_html += aux + self.final
           
-        self.body += df_html
+        self._ec.body += df_html
 
     def texto_planilhao(self):
         self.titulo_area("Planilhão")
@@ -214,7 +211,7 @@ class RelatorioReuniao:
         try:
             portifolio = self._df_planilhao.loc[0,"portfolio_ideal"] 
         except:
-            self.body += "<p> Cliente esta ausente no planilhao</p>"
+            self._ec.body += "<p> Cliente esta ausente no planilhao</p>"
             return False
         aderencia = self._df_planilhao.loc[0,"aderencia"] 
 
@@ -237,16 +234,16 @@ class RelatorioReuniao:
                 value_under += valor
         #ver qnt posso sair 
         dict_opc = dict(zip(opcoes,lista_valores))
-        self.body += f"A partir do planilhão temos que o cliente tem perfil {int(portifolio)} e NET {self._df_planilhao.loc[0,'PL']}, está com uma aderência de <b>{float(round(aderencia*100,2))}%</b>,"
+        self._ec.body += f"A partir do planilhão temos que o cliente tem perfil {int(portifolio)} e NET {'{:_.2f}'.format(round(self._df_planilhao.loc[0,'PL'],2)).replace('.',',').replace('_','.')}, está com uma aderência de <b>{float(round(aderencia*100,2))}%</b>,"
         # if len(over) !=0:
-        self.body += "e também é possivel analisar que o seu cliente está com posição <b>Over</b>, nas seguintes classes:"
+        self._ec.body += "e também é possivel analisar que o seu cliente está com posição <b>Over</b>, nas seguintes classes:"
         self.bullet_list_alocacao(over,dict_opc)
-        self.body += f"Totalizando: R$ {self.__formatar_tempo(round(value_over,2))}"
+        self._ec.body += f"Totalizando: R$ {self.__formatar_tempo(round(value_over,2))}"
 
             # if len(under) !=0:
-        self.body += "<br>e <b>Under</b>:"
+        self._ec.body += "<br>e <b>Under</b>:"
         self.bullet_list_alocacao(under,dict_opc)
-        self.body += f"Totalizando: R$ {self.__formatar_tempo(round(value_under,2))} "
+        self._ec.body += f"Totalizando: R$ {self.__formatar_tempo(round(value_under,2))} "
         # self.body += "<br>Baseado nisso as seguintes movimentações parecem ser coerentes:"
         #raciocinio de retirada de posições problematicas primeiro do q ta over 
         #depois de aplicação sem estourar o limite, tudo mt delicdado aqui, varias condções 
@@ -260,6 +257,7 @@ if __name__ == "__main__":
     # rr = RelatorioReuniao(354748 ,engine)
     
     # rr = RelatorioReuniao(9673555 ,engine)
+    rr.destinatario("douglas.souza@cmsinvest.com.br")
     rr.estruturar_email()
 
     # print(pd.read_sql_query("SELECT * from captacao_por_cliente cpc where cod_cliente = 7851089", engine))

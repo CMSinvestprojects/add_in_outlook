@@ -20,7 +20,7 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/upload_video_page")
+@app.route("/upload_audio")
 def upload_page():
     return render_template('upload_video.html')
 
@@ -61,7 +61,7 @@ def upload():
 def taskpane():
     return render_template("taskpane.html")
 
-@app.route("/commands.html")
+@app.route("/commands")
 def commands():
     return render_template("commands.html")
 
@@ -100,7 +100,7 @@ def submit_client_code():
     email = data.get('userEmail')
     
     rr = RelatorioReuniao(client_code   ,engine)
-    rr.destinatario(email)
+    rr._ec.destinatario(email)
     rr.estruturar_email()
     
     response = {
