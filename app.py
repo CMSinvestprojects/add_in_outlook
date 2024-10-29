@@ -7,7 +7,9 @@ from devcerts.install import ensure_certificates_are_installed
 from email_relatorio import RelatorioReuniao
 from database import engine
 import requests 
-from api_functions import upload_file_to_s3, notify_webhook
+from api_functions import upload_file_to_s3, notify_webhook, call_process_transcription
+import threading
+
 dotenv.load_dotenv()
 
 FASTAPI_URL = os.getenv('FASTAPI_URL')
@@ -24,38 +26,33 @@ def index():
 def upload_page():
     return render_template('upload_video.html')
 
+
+
 @app.route("/upload", methods=['POST', 'GET'])
 def upload():
     # Verifica se o arquivo foi enviado corretamente
     if 'files' not in request.files:
-        print(request.files)
-        print('oie')
         return jsonify({"error": "Nenhum arquivo encontrado"}), 400
     
     file = request.files['files']
     rawFile = request.files.get('files')
-
-    print(file)
-    print(rawFile)
-    print(file.filename)
+    
     if file.filename == '':
         return jsonify({"error": "Nenhum arquivo selecionado"}), 400
     
-    # Fazer o upload do arquivo para o S3 usando o presigned URL
-    success = upload_file_to_s3(rawFile)
+
+    file_content = file.read()
+    file_name = file.filename
+    content_type = file.content_type
     
-    if success:
+    # Iniciar o upload do arquivo para o S3 em segundo plano
+    print("Iniciando upload em segundo plano")
+    threading.Thread(target=upload_file_to_s3, args=(file_name, file_content, content_type)).start()
 
-        success_webhook = notify_webhook(file.filename)
-        if success_webhook:
-            return jsonify({"message": f"Arquivo {file.filename} enviado e convertido com sucesso!"}), 200
-        
-        else:
-            return jsonify({"error": f"Falha ao chamar o webhook pro arquivo {file.filename}."}), 500
+    # Liberar o usuário imediatamente
+    return jsonify({"message": f"Arquivo {file.filename} está sendo enviado. O upload e o processamento ocorrerão em segundo plano."}), 200
 
 
-    else:
-        return jsonify({"error": f"Falha ao enviar o arquivo {file.filename}."}), 500
 
 @app.route("/taskpane")
 def taskpane():
@@ -87,7 +84,7 @@ def icon128():
 
 @app.route("/assets/logo-filled.png")
 def iconlogofilled():
-    return send_file("./static/assets/logo-filled.png",mimetype='image/png')
+    return send_file("./static/assets/logo-header.svg",mimetype='image/svg')
 
 @app.route('/favicon.ico')
 def favicon():

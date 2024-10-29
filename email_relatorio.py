@@ -53,7 +53,7 @@ class RelatorioReuniao:
         self._iu = InfosUsuario(cod_cliente,engine)
         self._ec = EmailCreator()
         self._df_mapao = self._iu.mapao()
-        self._df_extrato = self._iu.extrato()
+        #self._df_extrato = self._iu.extrato()
         self._df_planilhao = self._iu.planilhao()
         self._df_patrimonio = self._iu.rentabilidade()
         self._df_captacao = self._iu.captacao()
