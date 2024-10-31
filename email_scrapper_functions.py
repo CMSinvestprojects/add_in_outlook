@@ -1,3 +1,10 @@
+from datetime import datetime
+import pytz
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from dotenv import load_dotenv
+import os
 import pandas as pd
 
 class InfosUsuario:
@@ -56,4 +63,55 @@ class InfosUsuario:
         return df
 
     def nome(self):
-        return self.__shorten_name(pd.read_sql_query(f"select * from info_clientes where cod_cliente={self._cod_cliente}", self._engine)['nome_cliente'].to_list()[0].capitalize())
+        try:
+            return self.__shorten_name(pd.read_sql_query(f"select * from info_clientes where cod_cliente={self._cod_cliente}", self._engine)['nome_cliente'].to_list()[0].capitalize())
+        except:
+            return "Cliente Não Identificado"
+        
+    def rentabilidade(self):
+        df = pd.read_sql_query(f"SELECT * FROM rentabilidades WHERE YEAR(data) = YEAR(CURRENT_DATE) and cod_cliente = {self._cod_cliente}", self._engine)
+        return df
+    
+    def captacao(self):
+        """
+        retona a captacao dos uiltimos 12 meses do cliente
+        """
+        df = pd.read_sql_query(f"SELECT * from captacao_por_cliente cpc where cod_cliente = {self._cod_cliente} and tipo_de_captacao = 'TED' and data >= (now() - INTERVAL 12 MONTH )",self._engine)
+        return df
+    
+
+
+load_dotenv()
+
+class EmailCreator:
+
+    def __init__(self):
+        now = datetime.utcnow().replace(tzinfo=pytz.utc)
+        now = now.replace(tzinfo=None)
+
+        smtphost = 'smtp.gmail.com'
+        smtpport = 587
+        self._username = os.getenv('email')
+        password = os.getenv("senha_app")
+    
+        self._msg = MIMEMultipart('alternative')
+        self._msg['From'] = self._username
+        self._server = smtplib.SMTP(smtphost, smtpport)
+        self._server.ehlo()
+        self._server.starttls()
+        self._server.login(self._username, password)
+        self.body = ""
+    
+    def destinatario(self,email_dest):
+        self._mailto = email_dest
+        self._msg['To'] = email_dest
+
+    def enviar_email(self):
+        htmlbody = MIMEText(self.body, 'html')
+        self._msg.attach(htmlbody)
+        self._server.sendmail(self._username, self._mailto, self._msg.as_bytes())
+        self._server.close()
+
+
+    def asssunto(self,subject):
+        self._msg['Subject'] = subject
